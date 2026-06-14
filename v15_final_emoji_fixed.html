@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>초등 영어단어 앱 v15</title>
+<style>
+  :root{
+    --bg:#f6f8fc; --card:#ffffff; --ink:#1f2937; --sub:#6b7280; --line:#dbe2ea;
+    --blue:#2563eb; --blue-soft:#dbeafe; --red:#b91c1c; --red-soft:#fee2e2;
+    --green:#15803d; --accent:#0f766e; --yellow:#fef3c7;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;}
+  header{position:sticky;top:0;z-index:10;background:#fff;border-bottom:1px solid var(--line);padding:14px 16px;}
+  h1{margin:0 0 10px 0;font-size:20px;}
+  .tabs{display:flex;flex-wrap:wrap;gap:8px;}
+  .tab{background:#fff;border:1px solid var(--line);color:var(--ink);padding:10px 12px;border-radius:12px;cursor:pointer;font-size:14px;}
+  .tab.active{background:var(--blue);border-color:var(--blue);color:#fff;}
+  main{max-width:1000px;margin:0 auto;padding:16px;}
+  .panel{display:none}.panel.active{display:block}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:14px;box-shadow:0 1px 2px rgba(0,0,0,.03);}
+  .example{font-size:19px;font-weight:800;color:#111827;margin:8px 0;line-height:1.6;}
+  .meaning{font-size:17px;margin:8px 0;line-height:1.6;}
+  .word{font-size:21px;font-weight:800;color:var(--green);margin:8px 0 6px 0;}
+  .numcirc{font-size:19px;font-weight:700;color:#374151;margin-right:8px;}
+  .muted{font-size:13px;color:var(--sub);}
+  .speak{cursor:pointer;display:inline-block;border-bottom:1px dashed #94a3b8;padding-bottom:1px;}
+  .example.speak,.meaning.speak{display:block;width:100%;}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+  button{border:none;cursor:pointer;background:var(--blue);color:#fff;padding:10px 14px;border-radius:12px;font-size:14px;}
+  button.secondary{background:var(--accent)} button.ghost{background:#fff;color:var(--ink);border:1px solid var(--line)} button.danger{background:var(--red)}
+  .choice-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;}
+  .choice{background:#fff;border:1px solid var(--line);color:var(--ink);padding:14px;border-radius:14px;text-align:left;font-size:16px;font-weight:700;cursor:pointer;}
+  .choice.correct{background:var(--blue-soft);border-color:var(--blue);color:var(--blue)}
+  .choice.wrong{background:var(--red-soft);border-color:var(--red);color:var(--red)}
+  .big{font-size:28px;font-weight:800;margin:8px 0 14px 0;}
+  .result-ok{color:var(--blue);font-weight:800}.result-bad{color:var(--red);font-weight:800}
+  .pill{display:inline-block;padding:6px 10px;border-radius:999px;border:1px solid var(--line);background:#fff;font-size:13px;}
+  textarea{width:100%;min-height:120px;font-size:16px;line-height:1.5;padding:12px;border-radius:12px;border:1px solid var(--line);}
+  input[type="text"]{width:100%;font-size:15px;line-height:1.5;padding:10px 12px;border-radius:12px;border:1px solid var(--line);}
+  ol{padding-left:20px}.empty{padding:14px;border:1px dashed var(--line);border-radius:14px;color:var(--sub);background:#fff;}
+  .save-item{padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:#fff;margin-top:8px;}
+  .hl-word{color:#f97316;font-weight:900;}
+
+  /* 학습 모드 1: 슬라이드 카드 */
+  .slide-stage{display:flex;justify-content:center;}
+  .slide-card{
+    width:min(92vw,640px);min-height:560px;background:#fff;border:1px solid var(--line);
+    border-radius:28px;padding:28px 24px;box-shadow:0 10px 28px rgba(15,23,42,.09);
+    display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:10px;
+    touch-action:pan-y;user-select:none;
+  }
+  .slide-word{font-size:48px;font-weight:900;color:var(--red);letter-spacing:.3px;text-align:center;margin:0;}
+  .slide-example{font-size:36px;font-weight:900;color:#374151;text-align:center;line-height:1.28;margin:0 0 4px 0;min-height:40px;border-bottom:1px dashed #cbd5e1;padding-bottom:4px;}
+  .slide-visual{width:100%;height:360px;display:flex;align-items:center;justify-content:center;overflow:visible;margin:6px 0 0;background:transparent;border:none;}
+  .slide-img{max-width:100%;max-height:100%;object-fit:contain;display:block;border:none;background:transparent;}
+  .slide-emoji{font-size:260px;line-height:1;display:flex;align-items:center;justify-content:center;transform:scale(1.08);}
+  .slide-meaning{font-size:32px;font-weight:900;color:#111827;text-align:center;line-height:1.35;margin:2px 0 0;}
+  .slide-controls{justify-content:center;margin-top:14px;}
+  .slide-counter{font-size:14px;color:var(--sub);text-align:center;margin-top:10px;}
+  .tap-hint{font-size:13px;color:var(--sub);text-align:center;margin-top:2px;}
+  @media (max-width:700px){.choice-grid{grid-template-columns:1fr}.slide-card{min-height:520px;padding:24px 18px}.slide-word{font-size:42px}.slide-example{font-size:29px}.slide-visual{height:270px}.slide-emoji{font-size:200px}.slide-meaning{font-size:27px}}
+
+  .study2-card{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:14px;align-items:stretch;}
+  .study2-main{min-width:0;}
+  .read-score-box{
+    border:1px solid var(--line);border-radius:14px;background:#fff7ed;padding:12px;
+    display:flex;flex-direction:column;gap:8px;min-height:128px;cursor:pointer;
+  }
+  .read-score-title{font-size:14px;font-weight:800;color:#9a3412;}
+  .read-score-help{font-size:12px;color:#7c2d12;line-height:1.45;}
+  .recognized-text{font-size:14px;color:#111827;line-height:1.45;min-height:34px;background:#fff;border:1px dashed #fdba74;border-radius:10px;padding:8px;}
+  .score-result{font-size:18px;font-weight:900;color:#ea580c;}
+  .score-detail{font-size:12px;color:#6b7280;line-height:1.4;}
+  .listening{outline:3px solid #fdba74;background:#ffedd5;}
+  @media (max-width:760px){.study2-card{grid-template-columns:1fr}.read-score-box{min-height:112px}}
+
+
+  .manual-score-input{
+    width:100%;border:1px solid #fdba74;border-radius:10px;padding:8px;font-size:14px;
+    background:#fff;min-height:38px;
+  }
+  .permission-warning{font-size:12px;color:#b91c1c;line-height:1.45;background:#fff1f2;border:1px solid #fecdd3;border-radius:10px;padding:8px;}
+
+
+  .sentence-make-card{display:grid;grid-template-columns:180px minmax(0,1fr);gap:14px;align-items:start;}
+  .make-word{font-size:28px;font-weight:900;color:#b91c1c;}
+  .make-meaning{font-size:16px;color:#111827;margin-top:6px;}
+  .make-input{width:100%;min-height:72px;border:1px solid var(--line);border-radius:12px;padding:10px;font-size:16px;line-height:1.5;}
+  .make-example{font-size:14px;color:#6b7280;margin-top:8px;}
+  @media(max-width:760px){.sentence-make-card{grid-template-columns:1fr}.make-word{font-size:24px}}
+
+
+  .make-voice-status{font-size:13px;color:#6b7280;margin-top:6px;}
+  .make-voice-status.on{color:#b45309;font-weight:800;}
+  .make-voice-status.error{color:#b91c1c;font-weight:800;}
+  .make-input.listening{outline:3px solid #f59e0b;background:#fffbeb;}
+
+
+  .danger-clear{border:none;cursor:pointer;background:#dc2626;color:#fff;padding:10px 14px;border-radius:12px;font-size:14px;}
+  .danger-clear:hover{background:#b91c1c;}
+  .clear-one-btn{border:none;cursor:pointer;background:#fee2e2;color:#991b1b;padding:9px 12px;border-radius:10px;font-size:14px;}
+  .clear-one-btn:hover{background:#fecaca;}
+  .make-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center;}
+
+</style>
+</head>
+<body>
+<header>
+  <h1>초등 영어단어 앱</h1>
+  <div class="tabs">
+    <button class="tab active" data-tab="study1">단어 학습</button>
+    <button class="tab" data-tab="study2">예문 학습</button>
+    <button class="tab" data-tab="study3">예문 만들기</button>
+    <button class="tab" data-tab="quiz">단어 퀴즈</button>
+    <button class="tab" data-tab="wrongs">오답노트</button>
+    <button class="tab" data-tab="apply">활용하기</button>
+    <button class="tab" data-tab="upload">파일 올리기</button>
+    <button class="tab" data-tab="saved">저장한 학습</button>
+    <button class="danger-clear" id="clearAllRecordsBtn" type="button">전체 지우기</button>
+  </div>
+</header>
+<main>
+  <section id="study1" class="panel active">
+    <div class="card"><div class="muted">단어 학습은 단어를 슬라이드 카드로 봅니다. 단어는 빨간색 굵은 글자, 가운데에는 뜻에 맞는 그림, 아래에는 뜻이 나옵니다. 단어를 누르면 영어 음성으로 읽습니다.</div></div>
+    <div class="slide-stage"><div class="slide-card">
+      <div class="slide-word speak" id="slideWord"></div>
+      <div class="slide-example speak" id="slideExample"></div>
+      <div class="slide-visual" id="slideVisual"><img class="slide-img" id="slideImage" alt="단어 그림" /><div class="slide-emoji" id="slideEmoji" aria-label="단어 그림"></div></div>
+      <div class="slide-meaning" id="slideMeaning"></div>
+      <div class="tap-hint">오른쪽을 터치하면 다음 단어, 왼쪽을 터치하면 이전 단어</div>
+    </div></div>
+    <div class="row slide-controls"><button class="ghost" id="prevSlide">이전</button><button id="speakSlideWord">단어 듣기</button><button class="secondary" id="nextSlide">다음</button></div>
+    <div class="slide-counter" id="slideCounter"></div>
+  </section>
+
+  <section id="study2" class="panel">
+    <div class="card"><div class="muted">예문 학습에서는 예문이 먼저 보입니다. 예문 속 배울 단어는 밝은 주황색으로 보이고, 오른쪽 칸을 누르면 아이가 읽은 문장을 받아쓴 뒤 원문과 비교해 점수를 냅니다.</div></div>
+    <div id="studyList"></div>
+  </section>
+
+
+  <section id="study3" class="panel">
+    <div class="card">
+      <div class="muted">예문 만들기에서는 단어와 뜻을 보고 학습자가 직접 영어 예문을 써 봅니다.</div>
+    </div>
+    <div id="sentenceMakeList"></div>
+  </section>
+
+  <section id="quiz" class="panel"><div class="card"><div class="row"><span class="pill" id="quizProgress">1 / 12</span><span class="pill" id="quizScore">점수 0</span></div><div style="height:10px"></div><div class="muted">뜻을 읽고 알맞은 단어를 고릅니다. 정답을 맞히면 자동으로 다음 문제로 넘어갑니다.</div><div class="meaning speak" id="quizMeaning"></div><div class="choice-grid" id="quizChoices"></div><div style="height:10px"></div><div id="quizResult"></div><div style="height:10px"></div><button class="secondary" id="nextQuiz">다음 문제</button></div></section>
+
+  <section id="wrongs" class="panel"><div class="card"><div class="row"><span class="pill" id="wrongProgress">오답 0개</span><span class="pill" id="wrongScore">점수 0</span></div><div style="height:10px"></div><div class="muted">이전 단계에서 틀린 단어만 다시 시험 봅니다.</div><div class="meaning speak" id="wrongMeaning"></div><div class="choice-grid" id="wrongChoices"></div><div style="height:10px"></div><div id="wrongResult"></div><div style="height:10px"></div><div class="row"><button class="secondary" id="nextWrong">다음 문제</button><button class="ghost" id="clearWrongs">오답노트 지우기</button></div><div style="height:10px"></div><div id="wrongEmpty" class="empty" style="display:none;">아직 오답이 없습니다.</div></div></section>
+
+  <section id="apply" class="panel"><div class="card"><div class="row"><span class="pill" id="applyProgress">1 / 12</span></div><div style="height:10px"></div><div class="example speak" id="applyExample"></div><div class="meaning speak" id="applyMeaning"></div><div style="height:10px"></div><div class="muted">아래 버튼을 눌러 아이가 말한 내용을 받아쓰기합니다. 나중에 선생님이 확인할 수 있습니다.</div><div style="height:10px"></div><div class="row"><button id="startDictation">받아쓰기 시작</button><button class="ghost" id="replayExample">예문 듣기</button><button class="ghost" id="replayMeaning">뜻 듣기</button><button class="secondary" id="nextApply">다음 단어</button></div><div style="height:10px"></div><textarea id="dictationText" placeholder="받아쓰기 결과가 여기에 보입니다."></textarea><div style="height:10px"></div><button class="secondary" id="saveDictation">현재 기록 저장</button></div><div class="card"><div class="row"><button class="ghost" id="clearDictationLogs">기록 지우기</button></div><div style="height:10px"></div><div><strong>받아쓰기 기록</strong></div><ol id="dictationLogs"></ol></div></section>
+
+  <section id="upload" class="panel"><div class="card"><div class="muted">파일 형식: <strong>단어 / 예문 / 이미지 / 뜻</strong> 순서로 한 줄에 하나씩 넣으면 됩니다. 이미지는 이모지(🙂), 이미지 주소(URL), data:image 모두 가능합니다.</div><div style="height:8px"></div><div class="muted">예시</div><textarea readonly>accurate / His math is accurate. / ✅ / correct
+alert / Be alert. / 👀 / watching carefully
+romp / Puppies romp. / 🐶 / run and play</textarea><div style="height:10px"></div><input type="file" id="fileInput" accept=".txt,.csv" /><div style="height:10px"></div><textarea id="textInput" placeholder="여기에 직접 붙여넣어도 됩니다."></textarea><div style="height:10px"></div><div class="row"><button id="loadTextData">붙여넣은 내용 불러오기</button><button class="secondary" id="saveCurrentSet">현재 학습 저장</button></div><div style="height:10px"></div><div id="uploadStatus" class="muted"></div></div></section>
+
+  <section id="saved" class="panel"><div class="card"><div class="muted">저장해 둔 학습 내용을 다시 불러올 수 있습니다.</div><div style="height:10px"></div><div id="savedList"></div></div></section>
+</main>
+<script>
+function svgData(title, meaning, emoji, bg1='#eff6ff', bg2='#dbeafe'){
+  const safeEmoji = String(emoji||'🖼️').replace(/[&<>"]/g, s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[s]));
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 520"><defs><linearGradient id="g" x1="0" x2="1" y1="0" y2="1"><stop stop-color="${bg1}"/><stop offset="1" stop-color="${bg2}"/></linearGradient></defs><rect width="800" height="520" rx="42" fill="url(#g)"/><circle cx="130" cy="110" r="70" fill="rgba(255,255,255,.55)"/><circle cx="690" cy="420" r="95" fill="rgba(255,255,255,.5)"/><text x="400" y="270" font-size="260" text-anchor="middle" dominant-baseline="middle">${safeEmoji}</text></svg>`;
+  return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
+}
+const imageMap = {
+  accurate: svgData('accurate','correct','✅','#ecfeff','#cffafe'),
+  alert: svgData('alert','watching carefully','👀','#fff7ed','#fed7aa'),
+  ancestor: svgData('ancestor','family from long ago','👴','#fefce8','#fef3c7'),
+  disaster: svgData('disaster','a very bad event','🌊','#eff6ff','#bfdbfe'),
+  elementary: svgData('elementary','very simple','🔤','#f0fdf4','#bbf7d0'),
+  envy: svgData('envy','want what someone else has','🎁','#fdf2f8','#fbcfe8'),
+  epidemic: svgData('epidemic','sickness spreading','🦠','#f0fdfa','#ccfbf1'),
+  feeble: svgData('feeble','weak','🐣','#fffbeb','#fde68a'),
+  penetrate: svgData('penetrate','go through','➡️','#f8fafc','#e2e8f0'),
+  romp: svgData('romp','run and play','🐶','#f0f9ff','#bae6fd'),
+  staple: svgData('staple','basic thing used a lot','🍚','#fefce8','#fde68a'),
+  survive: svgData('survive','stay alive','🌱','#f0fdf4','#bbf7d0')
+};
+function isImageUrl(value){
+  const v=String(value||'').trim();
+  return /^(https?:\/\/|data:image\/|blob:|file:)/i.test(v);
+}
+function autoImage(item){
+  if(item.image){
+    const img=String(item.image).trim();
+    if(isImageUrl(img)) return img;
+    return svgData(item.word, item.meaning, img);
+  }
+  const key = String(item.word||'').toLowerCase().trim();
+  if(imageMap[key]) return imageMap[key];
+  const text = `${item.word||''} ${item.meaning||''}`.toLowerCase();
+  let emoji='🖼️';
+  if(/run|play|romp|jump/.test(text)) emoji='🏃';
+  else if(/family|ancestor|old/.test(text)) emoji='👨‍👩‍👧';
+  else if(/sick|ill|disease|epidemic/.test(text)) emoji='🦠';
+  else if(/weak|feeble/.test(text)) emoji='🐣';
+  else if(/alive|survive|plant/.test(text)) emoji='🌱';
+  else if(/correct|accurate/.test(text)) emoji='✅';
+  else if(/watch|careful|alert/.test(text)) emoji='👀';
+  else if(/food|rice|basic|staple/.test(text)) emoji='🍚';
+  else if(/go through|penetrate|through/.test(text)) emoji='➡️';
+  return svgData(item.word, item.meaning, emoji);
+}
+const defaultWords = [
+  {word:'accurate', example:'His math is accurate.', meaning:'correct'},
+  {word:'alert', example:'Be alert.', meaning:'watching carefully'},
+  {word:'ancestor', example:'She is my ancestor.', meaning:'family from long ago'},
+  {word:'disaster', example:'The flood was a disaster.', meaning:'a very bad event'},
+  {word:'elementary', example:'This is elementary.', meaning:'very simple'},
+  {word:'envy', example:'Do not envy him.', meaning:'want what someone else has'},
+  {word:'epidemic', example:'The town had an epidemic.', meaning:'a sickness spreading to many people'},
+  {word:'feeble', example:'The baby bird is feeble.', meaning:'weak'},
+  {word:'penetrate', example:'Light can penetrate glass.', meaning:'go through'},
+  {word:'romp', example:'Puppies romp.', meaning:'run and play'},
+  {word:'staple', example:'Rice is a staple.', meaning:'a basic thing used a lot'},
+  {word:'survive', example:'Plants survive here.', meaning:'stay alive'}
+];
+let words = JSON.parse(localStorage.getItem('currentWordSetV7') || 'null') || defaultWords;
+let savedSets = JSON.parse(localStorage.getItem('savedWordSetsV6') || localStorage.getItem('savedWordSetsV4') || '[]');
+let slideIndex = 0;
+let quizIndex = 0, quizScore = 0, quizLocked = false;
+let wrongWords = JSON.parse(localStorage.getItem('wrongWordsV6') || localStorage.getItem('wrongWordsV4') || '[]');
+let sentenceMakeLogs = JSON.parse(localStorage.getItem('sentenceMakeLogsV13') || '[]');
+let sentenceMakeRecognition=null;
+let sentenceMakeActiveInput=null;
+function normalize(text){return (text||'').toLowerCase().trim().replace(/[.?!,]/g,'').replace(/\s+/g,' ')}
+function shuffle(arr){const copy=[...arr];for(let i=copy.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[copy[i],copy[j]]=[copy[j],copy[i]];}return copy;}
+function speakText(text){if(!('speechSynthesis' in window)){alert('이 기기에서는 음성 읽기를 지원하지 않습니다.');return;}if(!text)return;const u=new SpeechSynthesisUtterance(text);u.lang='en-US';u.rate=.95;window.speechSynthesis.cancel();window.speechSynthesis.speak(u);}function speakWordTwice(text){if(!('speechSynthesis' in window)){return;}if(!text)return;window.speechSynthesis.cancel();const u1=new SpeechSynthesisUtterance(text);u1.lang='en-US';u1.rate=.9;const u2=new SpeechSynthesisUtterance(text);u2.lang='en-US';u2.rate=.9;u1.onend=function(){setTimeout(function(){window.speechSynthesis.speak(u2);},300);};window.speechSynthesis.speak(u1);setTimeout(function(){if(!window.speechSynthesis.speaking&&!window.speechSynthesis.pending){window.speechSynthesis.speak(u2);}},1300);}
+function createRecognition(onResult){const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){alert('이 브라우저에서는 음성 인식을 지원하지 않습니다. Safari 또는 Chrome 최신 버전에서 시도하세요.');return null;}const rec=new SR();rec.lang='en-US';rec.interimResults=false;rec.maxAlternatives=1;rec.onresult=e=>onResult(e.results[0][0].transcript);return rec;}
+function escapeHtml(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function highlightWord(example, word){if(!word)return escapeHtml(example);const re=new RegExp(`\\b(${String(word).replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})\\b`,'ig');return escapeHtml(example).replace(re,'<span class="hl-word">$1</span>');}
+function circledNumber(idx){const list=['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩','⑪','⑫','⑬','⑭','⑮','⑯','⑰','⑱','⑲','⑳'];return list[idx]||(idx+1).toString();}
+function saveCurrentWords(){localStorage.setItem('currentWordSetV7',JSON.stringify(words));}
+document.addEventListener('click',e=>{const el=e.target.closest('.speak');if(!el)return;const txt=el.dataset.speak||el.textContent;speakText(txt);});
+document.querySelectorAll('.tab').forEach(btn=>{btn.addEventListener('click',()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));btn.classList.add('active');document.getElementById(btn.dataset.tab).classList.add('active');if(btn.dataset.tab==='study1')renderSlide(true);if(btn.dataset.tab==='study2')renderStudy();if(btn.dataset.tab==='study3')renderSentenceMake();if(btn.dataset.tab==='quiz')renderQuiz();if(btn.dataset.tab==='wrongs')renderWrongQuiz();if(btn.dataset.tab==='saved')renderSavedSets();});});
+const clearAllRecordsBtn=document.getElementById('clearAllRecordsBtn');if(clearAllRecordsBtn){clearAllRecordsBtn.onclick=clearAllUserRecords;}
+function isImageUrlLike(value){
+  const v=String(value||'').trim();
+  return /^(https?:\/\/|data:image\/|blob:|file:)/i.test(v);
+}
+function isEmojiLike(value){
+  const v=String(value||'').trim();
+  return !!v && v.length<=12 && /[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}]/u.test(v);
+}
+function isVisualToken(value){
+  const v=String(value||'').trim();
+  return isImageUrlLike(v) || isEmojiLike(v);
+}
+function fallbackEmoji(item){
+  const key=String(item.word||'').toLowerCase().trim();
+  const emojiByWord={
+    sincere:'🙂', inspired:'💡', managed:'✅', reunion:'👨‍👩‍👧‍👦', loaded:'🚚', currently:'📖',
+    loveliest:'🌸', pleasure:'😊', conversations:'💬', terror:'😱', accurate:'✅', alert:'👀',
+    ancestor:'👴', disaster:'🌊', elementary:'🔤', envy:'🎁', epidemic:'🦠', feeble:'🐣',
+    penetrate:'➡️', romp:'🐶', staple:'🍚', survive:'🌱'
+  };
+  return emojiByWord[key] || '🖼️';
+}
+
+function normalizeWordItem(item){
+  item=item||{};
+  const word=item.word||'';
+  const example=item.example||'';
+  let image=String(item.image||'').trim();
+  let meaning=String(item.meaning||'').trim();
+
+  // 이전 버전에서 "이미지"와 "뜻"이 반대로 저장된 경우 자동 복구
+  // 예: image = "filled with a good idea", meaning = "💡"
+  if(image && meaning && !isVisualToken(image) && isVisualToken(meaning)){
+    const tmp=image;
+    image=meaning;
+    meaning=tmp;
+  }
+
+  // 이미지 칸이 비어 있고 뜻 칸에 이모지만 있는 경우 기본 뜻 보정
+  if(!image && isVisualToken(meaning)){
+    image=meaning;
+    const defaults={
+      sincere:'honest and true', inspired:'filled with a good idea', managed:'was able to do something',
+      reunion:'a meeting again after a long time', loaded:'filled with things', currently:'happening now',
+      loveliest:'the most beautiful or sweet', pleasure:'a feeling of happiness',
+      conversations:'talks between people', terror:'a very strong feeling of fear'
+    };
+    meaning=defaults[String(word).toLowerCase().trim()]||'';
+  }
+
+  return {word,example,image,meaning};
+}
+function normalizeAllWords(){
+  words=(words||[]).map(normalizeWordItem);
+  saveCurrentWords();
+}
+
+function renderSlide(autoSpeak=false){
+  if(!words.length)return;
+  if(slideIndex>=words.length)slideIndex=0;
+  if(slideIndex<0)slideIndex=words.length-1;
+  const item=normalizeWordItem(words[slideIndex]);
+  words[slideIndex]=item;
+  const w=document.getElementById('slideWord');
+  w.textContent=item.word;
+  w.dataset.speak=item.word;
+  w.onclick=()=>speakWordTwice(item.word);
+  const ex=document.getElementById('slideExample');
+  if(ex){ex.textContent=item.example||'';ex.dataset.speak=item.example||'';}
+
+  const img=document.getElementById('slideImage');
+  const emoji=document.getElementById('slideEmoji');
+  let visual=String(item.image||'').trim();
+  if(!isVisualToken(visual)) visual=fallbackEmoji(item);
+
+  if(isImageUrlLike(visual)){
+    emoji.style.display='none';
+    emoji.textContent='';
+    img.style.display='block';
+    img.src=visual;
+    img.alt=`${item.word} image`;
+  }else{
+    img.style.display='none';
+    img.removeAttribute('src');
+    emoji.style.display='flex';
+    emoji.textContent=visual;
+  }
+
+  document.getElementById('slideMeaning').textContent=item.meaning||'';
+  document.getElementById('slideCounter').textContent=`${slideIndex+1} / ${words.length}`;
+  if(autoSpeak){setTimeout(()=>speakWordTwice(item.word),150);}
+}
+document.getElementById('prevSlide').onclick=()=>{slideIndex--;renderSlide(true);};document.getElementById('nextSlide').onclick=()=>{slideIndex++;renderSlide(true);};document.getElementById('speakSlideWord').onclick=()=>speakWordTwice(words[slideIndex].word);
+const slideCardEl=document.querySelector('.slide-card');
+let slideTouchStartX=null;
+if(slideCardEl){
+  slideCardEl.addEventListener('click',function(e){
+    if(e.target.closest('button')) return;
+    const rect=slideCardEl.getBoundingClientRect();
+    const x=e.clientX-rect.left;
+    if(x>rect.width/2){slideIndex++;renderSlide(true);}else{slideIndex--;renderSlide(true);}
+  });
+  slideCardEl.addEventListener('touchstart',function(e){slideTouchStartX=e.touches[0].clientX;},{passive:true});
+  slideCardEl.addEventListener('touchend',function(e){
+    if(slideTouchStartX===null)return;
+    const endX=e.changedTouches[0].clientX;
+    const diff=endX-slideTouchStartX;
+    if(Math.abs(diff)>35){ if(diff<0){slideIndex++;renderSlide(true);}else{slideIndex--;renderSlide(true);} }
+    slideTouchStartX=null;
+  },{passive:true});
+}
+
+function normalizeForScore(text){
+  return (text||'')
+    .toLowerCase()
+    .replace(/[’']/g,'')
+    .replace(/[^a-z0-9\s]/g,' ')
+    .replace(/\s+/g,' ')
+    .trim();
+}
+function levenshtein(a,b){
+  const m=a.length,n=b.length;
+  const dp=Array.from({length:m+1},()=>Array(n+1).fill(0));
+  for(let i=0;i<=m;i++)dp[i][0]=i;
+  for(let j=0;j<=n;j++)dp[0][j]=j;
+  for(let i=1;i<=m;i++){
+    for(let j=1;j<=n;j++){
+      const cost=a[i-1]===b[j-1]?0:1;
+      dp[i][j]=Math.min(dp[i-1][j]+1,dp[i][j-1]+1,dp[i-1][j-1]+cost);
+    }
+  }
+  return dp[m][n];
+}
+function sentenceScore(original, spoken){
+  const a=normalizeForScore(original);
+  const b=normalizeForScore(spoken);
+  if(!a && !b) return 100;
+  if(!a || !b) return 0;
+  const dist=levenshtein(a,b);
+  const maxLen=Math.max(a.length,b.length);
+  return Math.max(0,Math.round((1-dist/maxLen)*100));
+}
+
+let activeRecognition=null;
+let activeRecognitionBox=null;
+
+function updateManualScore(input, originalText){
+  const spoken=input.value||'';
+  const box=input.closest('.read-score-box');
+  const score=sentenceScore(originalText,spoken);
+  box.querySelector('.recognized-text').textContent=spoken?spoken:'직접 입력한 문장이 없습니다.';
+  box.querySelector('.score-result').textContent=spoken?score+'점':'-';
+  box.querySelector('.score-detail').textContent='문장 부호는 제외하고 계산했습니다.';
+}
+
+function showSpeechBlockedMessage(box){
+  box.querySelector('.recognized-text').innerHTML=
+    '<div class="permission-warning">음성 인식이 브라우저에서 차단되었습니다. 이 파일을 HTTPS 웹페이지로 열어야 음성 인식이 작동할 가능성이 높습니다. 아래 칸에 직접 입력하면 채점할 수 있습니다.</div>';
+  box.querySelector('.score-result').textContent='직접 입력 가능';
+}
+
+function stopActiveRecognition(){
+  if(activeRecognition){
+    try{ activeRecognition.onresult=null; activeRecognition.onerror=null; activeRecognition.onend=null; activeRecognition.stop(); }catch(e){}
+  }
+  if(activeRecognitionBox){ activeRecognitionBox.classList.remove('listening'); }
+  activeRecognition=null;
+  activeRecognitionBox=null;
+}
+
+function startReadingCheck(box, originalText){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){
+    box.querySelector('.recognized-text').innerHTML='<div class="permission-warning">이 브라우저에서는 자동 음성 인식을 지원하지 않습니다. 아래 입력칸으로 채점할 수 있습니다.</div>';
+    box.querySelector('.score-result').textContent='직접 입력 가능';
+    return;
+  }
+
+  stopActiveRecognition();
+
+  const rec=new SR();
+  activeRecognition=rec;
+  activeRecognitionBox=box;
+
+  rec.lang='en-US';
+  rec.interimResults=true;
+  rec.continuous=false;
+  rec.maxAlternatives=1;
+
+  let finalText='';
+  let interimText='';
+
+  box.classList.add('listening');
+  box.querySelector('.recognized-text').textContent='0.5초 뒤 듣기 시작합니다. 문장을 천천히 읽어 주세요.';
+  box.querySelector('.score-result').textContent='준비 중';
+  box.querySelector('.score-detail').textContent='마이크 표시가 보이면 문장을 읽어 주세요.';
+
+  rec.onstart=function(){
+    box.querySelector('.recognized-text').textContent='듣는 중입니다. 문장을 소리 내어 읽어 주세요.';
+    box.querySelector('.score-result').textContent='듣는 중';
+  };
+
+  rec.onresult=function(e){
+    interimText='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      const txt=e.results[i][0].transcript;
+      if(e.results[i].isFinal){ finalText+=txt+' '; }
+      else{ interimText+=txt+' '; }
+    }
+    const shown=(finalText||interimText).trim();
+    if(shown){ box.querySelector('.recognized-text').textContent=shown; }
+  };
+
+  rec.onerror=function(e){
+    if(e.error==='not-allowed'||e.error==='service-not-allowed'){
+      showSpeechBlockedMessage(box);
+    }else if(e.error==='aborted'){
+      box.querySelector('.recognized-text').textContent='음성 인식이 중간에 끊겼습니다. 같은 칸을 한 번 더 누르고, 마이크 표시가 뜬 뒤 읽어 주세요.';
+      box.querySelector('.score-result').textContent='다시 시도';
+      box.querySelector('.score-detail').textContent='모바일 Chrome에서는 너무 빨리 다시 누르거나 다른 칸을 누르면 aborted가 뜰 수 있습니다.';
+    }else if(e.error==='no-speech'){
+      box.querySelector('.recognized-text').textContent='소리를 인식하지 못했습니다. 조금 더 크게, 천천히 읽어 주세요.';
+      box.querySelector('.score-result').textContent='다시 시도';
+    }else{
+      box.querySelector('.recognized-text').textContent='음성 인식 오류: '+(e.error||'알 수 없음');
+      box.querySelector('.score-result').textContent='다시 시도';
+    }
+  };
+
+  rec.onend=function(){
+    box.classList.remove('listening');
+    const spoken=(finalText||interimText).trim();
+    if(spoken){
+      const score=sentenceScore(originalText,spoken);
+      box.querySelector('.recognized-text').textContent=spoken;
+      box.querySelector('.score-result').textContent=score+'점';
+      box.querySelector('.score-detail').textContent='문장 부호는 제외하고, 원래 문장과 비교해 계산했습니다.';
+    }else if(box.querySelector('.score-result').textContent==='듣는 중'){
+      box.querySelector('.recognized-text').textContent='인식된 문장이 없습니다. 다시 눌러 주세요.';
+      box.querySelector('.score-result').textContent='다시 시도';
+    }
+    if(activeRecognition===rec){
+      activeRecognition=null;
+      activeRecognitionBox=null;
+    }
+  };
+
+  // Android Chrome에서 즉시 start하면 aborted가 나는 경우가 있어 짧게 지연
+  setTimeout(function(){
+    try{
+      rec.start();
+    }catch(err){
+      box.querySelector('.recognized-text').textContent='음성 인식을 시작하지 못했습니다. 잠시 뒤 다시 눌러 주세요.';
+      box.querySelector('.score-result').textContent='다시 시도';
+      box.classList.remove('listening');
+    }
+  },500);
+}
+
+function renderStudy(){
+  const wrap=document.getElementById('studyList');
+  wrap.innerHTML='';
+  words.forEach((item,idx)=>{
+    const div=document.createElement('div');
+    div.className='card study2-card';
+    div.innerHTML=`
+      <div class="study2-main">
+        <div class="example speak" data-speak="${escapeHtml(item.example)}">
+          <span class="numcirc">${circledNumber(idx)}</span>${highlightWord(item.example,item.word)}
+        </div>
+        <div class="meaning speak" data-speak="${escapeHtml(item.meaning)}">${escapeHtml(item.meaning)}</div>
+      </div>
+      <div class="read-score-box" data-example="${escapeHtml(item.example)}" title="클릭하면 바로 음성 인식이 시작됩니다.">
+        <div class="read-score-title">읽기 받아쓰기</div>
+        <div class="read-score-help">이 칸을 누르고 마이크 표시가 뜬 뒤 문장을 읽으면 점수를 냅니다.</div>
+        <div class="recognized-text">클릭 후 마이크 표시가 뜨면 읽기</div>
+        <input class="manual-score-input" type="text" placeholder="음성 인식이 안 되면 여기에 문장을 입력" data-example="${escapeHtml(item.example)}" />
+        <div class="score-result">-</div>
+        <div class="score-detail">문장 부호는 채점에서 제외됩니다.</div>
+      </div>`;
+    wrap.appendChild(div);
+  });
+  document.querySelectorAll('.speak').forEach(el=>{
+    el.onclick=()=>speakText(el.dataset.speak||el.textContent);
+  });
+  document.querySelectorAll('.read-score-box').forEach(box=>{
+    box.onclick=(e)=>{
+      if(e.target.classList.contains('manual-score-input')) return;
+      startReadingCheck(box,box.dataset.example);
+    };
+  });
+  document.querySelectorAll('.manual-score-input').forEach(input=>{
+    input.onclick=(e)=>e.stopPropagation();
+    input.oninput=()=>updateManualScore(input,input.dataset.example);
+  });
+}
+
+function buildChoices(correctItem, allWords){
+  const pool = shuffle(allWords.filter(w=>w.word!==correctItem.word));
+  const choices = [correctItem, ...pool.slice(0,3)];
+  return shuffle(choices);
+}
+function addWrongWord(word){
+  if(!wrongWords.includes(word)){
+    wrongWords.push(word);
+    localStorage.setItem('wrongWordsV6',JSON.stringify(wrongWords));
+  }
+}
+function removeWrongWord(word){
+  wrongWords = wrongWords.filter(w=>w!==word);
+  localStorage.setItem('wrongWordsV6',JSON.stringify(wrongWords));
+}
+
+
+
+function stopSentenceMakeVoice(){
+  if(sentenceMakeRecognition){
+    try{
+      sentenceMakeRecognition.onresult=null;
+      sentenceMakeRecognition.onerror=null;
+      sentenceMakeRecognition.onend=null;
+      sentenceMakeRecognition.stop();
+    }catch(e){}
+  }
+  if(sentenceMakeActiveInput){
+    sentenceMakeActiveInput.classList.remove('listening');
+  }
+  sentenceMakeRecognition=null;
+  sentenceMakeActiveInput=null;
+}
+function startSentenceMakeVoice(input){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  const status=input.parentElement.querySelector('.make-voice-status');
+  if(!SR){
+    if(status){
+      status.textContent='이 브라우저에서는 음성 인식을 지원하지 않습니다. 직접 입력하세요.';
+      status.className='make-voice-status error';
+    }
+    return;
+  }
+
+  if(sentenceMakeActiveInput===input) return;
+
+  stopSentenceMakeVoice();
+
+  const rec=new SR();
+  sentenceMakeRecognition=rec;
+  sentenceMakeActiveInput=input;
+
+  rec.lang='en-US';
+  rec.interimResults=true;
+  rec.continuous=false;
+  rec.maxAlternatives=1;
+
+  let finalText='';
+  let interimText='';
+
+  input.classList.add('listening');
+  if(status){
+    status.textContent='0.5초 뒤 듣기 시작합니다. 마이크 표시가 뜬 뒤 예문을 말하세요.';
+    status.className='make-voice-status on';
+  }
+
+  rec.onstart=function(){
+    if(status){
+      status.textContent='듣는 중입니다. 예문을 영어로 말하세요.';
+      status.className='make-voice-status on';
+    }
+  };
+
+  rec.onresult=function(e){
+    interimText='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      const txt=e.results[i][0].transcript;
+      if(e.results[i].isFinal){ finalText+=txt+' '; }
+      else{ interimText+=txt+' '; }
+    }
+    const shown=(finalText+interimText).trim();
+    if(shown){
+      input.value=shown;
+      const word=input.dataset.makeWord;
+      sentenceMakeLogs=sentenceMakeLogs.filter(x=>x.word!==word);
+      sentenceMakeLogs.push({word, sentence:input.value, savedAt:new Date().toISOString()});
+      localStorage.setItem('sentenceMakeLogsV13',JSON.stringify(sentenceMakeLogs));
+    }
+  };
+
+  rec.onerror=function(e){
+    const err=e.error||'unknown';
+    if(status){
+      if(err==='not-allowed'||err==='service-not-allowed'){
+        status.textContent='마이크 권한이 차단되었습니다. HTTPS 주소에서 열고 마이크 권한을 허용하세요.';
+      }else if(err==='aborted'){
+        status.textContent='음성 인식이 중간에 끊겼습니다. 칸을 다시 누르고 마이크 표시 뒤 말하세요.';
+      }else if(err==='no-speech'){
+        status.textContent='소리를 인식하지 못했습니다. 조금 더 크게 말해 보세요.';
+      }else{
+        status.textContent='음성 인식 오류: '+err;
+      }
+      status.className='make-voice-status error';
+    }
+  };
+
+  rec.onend=function(){
+    input.classList.remove('listening');
+    const spoken=(finalText+interimText).trim();
+    if(status && spoken){
+      status.textContent='입력 완료';
+      status.className='make-voice-status';
+    }else if(status && status.className.indexOf('error')===-1){
+      status.textContent='인식된 문장이 없습니다. 칸을 다시 눌러 주세요.';
+      status.className='make-voice-status error';
+    }
+    if(sentenceMakeRecognition===rec){
+      sentenceMakeRecognition=null;
+      sentenceMakeActiveInput=null;
+    }
+  };
+
+  setTimeout(function(){
+    try{
+      rec.start();
+    }catch(e){
+      input.classList.remove('listening');
+      if(status){
+        status.textContent='음성 인식을 시작하지 못했습니다. 잠시 뒤 다시 눌러 주세요.';
+        status.className='make-voice-status error';
+      }
+      sentenceMakeRecognition=null;
+      sentenceMakeActiveInput=null;
+    }
+  },500);
+}
+
+
+function clearOneSentenceMake(word){
+  stopSentenceMakeVoice();
+  sentenceMakeLogs=sentenceMakeLogs.filter(x=>x.word!==word);
+  localStorage.setItem('sentenceMakeLogsV13',JSON.stringify(sentenceMakeLogs));
+  const input=document.querySelector(`.make-input[data-make-word="${CSS.escape(word)}"]`);
+  if(input){
+    input.value='';
+    const status=input.parentElement.querySelector('.make-voice-status');
+    if(status){
+      status.textContent='칸을 누르면 0.5초 뒤 음성 입력 시작';
+      status.className='make-voice-status';
+    }
+  }
+}
+function clearAllUserRecords(){
+  stopSentenceMakeVoice();
+  sentenceMakeLogs=[];
+  localStorage.removeItem('sentenceMakeLogsV13');
+  localStorage.removeItem('dictationLogsV6');
+  localStorage.removeItem('dictationLogsV4');
+  wrongWords=[];
+  localStorage.setItem('wrongWordsV6',JSON.stringify(wrongWords));
+
+  document.querySelectorAll('.make-input').forEach(input=>input.value='');
+  document.querySelectorAll('.make-voice-status').forEach(status=>{
+    status.textContent='칸을 누르면 0.5초 뒤 음성 입력 시작';
+    status.className='make-voice-status';
+  });
+  document.querySelectorAll('textarea#dictationText').forEach(t=>t.value='');
+  if(typeof renderDictationLogs==='function') renderDictationLogs();
+  if(typeof renderWrongQuiz==='function') renderWrongQuiz();
+  alert('입력 기록을 모두 지웠습니다.');
+}
+
+function renderSentenceMake(){
+  const wrap=document.getElementById('sentenceMakeList');
+  if(!wrap) return;
+  wrap.innerHTML='';
+  words.forEach((item,idx)=>{
+    const saved = sentenceMakeLogs.find(x=>x.word===item.word)?.sentence || '';
+    const div=document.createElement('div');
+    div.className='card sentence-make-card';
+    div.innerHTML=`
+      <div>
+        <div class="make-word">${escapeHtml(item.word)}</div>
+        <div class="make-meaning">${escapeHtml(item.meaning)}</div>
+        <button class="ghost" data-speak-make="${escapeHtml(item.word)}" style="margin-top:10px;">단어 듣기</button>
+      </div>
+      <div>
+        <textarea class="make-input" data-make-word="${escapeHtml(item.word)}" placeholder="${escapeHtml(item.word)}를 넣어 영어 예문을 만들어 보세요. 칸을 누르면 음성 입력이 시작됩니다.">${escapeHtml(saved)}</textarea>
+        <div class="make-voice-status">칸을 누르면 0.5초 뒤 음성 입력 시작</div>
+        <div class="make-actions">
+          <button class="clear-one-btn" type="button" data-clear-make="${escapeHtml(item.word)}">방금 입력한 문장 지우기</button>
+        </div>
+        <div class="make-example">원래 예문: ${escapeHtml(item.example)}</div>
+      </div>`;
+    wrap.appendChild(div);
+  });
+  wrap.querySelectorAll('[data-speak-make]').forEach(btn=>{
+    btn.onclick=()=>speakWordTwice(btn.dataset.speakMake);
+  });
+  wrap.querySelectorAll('[data-clear-make]').forEach(btn=>{
+    btn.onclick=()=>clearOneSentenceMake(btn.dataset.clearMake);
+  });
+  wrap.querySelectorAll('.make-input').forEach(input=>{
+    input.onclick=()=>startSentenceMakeVoice(input);
+    input.onfocus=()=>startSentenceMakeVoice(input);
+    input.oninput=()=>{
+      const word=input.dataset.makeWord;
+      sentenceMakeLogs=sentenceMakeLogs.filter(x=>x.word!==word);
+      sentenceMakeLogs.push({word, sentence:input.value, savedAt:new Date().toISOString()});
+      localStorage.setItem('sentenceMakeLogsV13',JSON.stringify(sentenceMakeLogs));
+    };
+  });
+}
+
+function renderQuiz(){const choicesWrap=document.getElementById('quizChoices');if(!choicesWrap)return;if(words.length===0){choicesWrap.innerHTML='<div class="empty">단어가 없습니다. 파일을 올려 주세요.</div>';return;}quizLocked=false;if(quizIndex>=words.length)quizIndex=0;const item=words[quizIndex];document.getElementById('quizProgress').textContent=`${quizIndex+1} / ${words.length}`;document.getElementById('quizScore').textContent=`점수 ${quizScore}`;const meanEl=document.getElementById('quizMeaning');meanEl.textContent=item.meaning;meanEl.dataset.speak=item.meaning;document.getElementById('quizResult').innerHTML='';choicesWrap.innerHTML='';buildChoices(item,words).forEach(choice=>{const btn=document.createElement('button');btn.className='choice';btn.textContent=choice.word;btn.onclick=()=>{if(quizLocked)return;quizLocked=true;const isCorrect=choice.word===item.word;[...choicesWrap.children].forEach(child=>{if(child.textContent===item.word)child.classList.add('correct');});if(isCorrect){btn.classList.add('correct');quizScore++;document.getElementById('quizScore').textContent=`점수 ${quizScore}`;document.getElementById('quizResult').innerHTML='<span class="result-ok">정답입니다. 다음 문제로 넘어갑니다.</span>';setTimeout(()=>{quizIndex=(quizIndex+1)%Math.max(words.length,1);renderQuiz();},700);}else{btn.classList.add('wrong');addWrongWord(item.word);document.getElementById('quizResult').innerHTML=`<span class="result-bad">오답입니다. 정답은 ${item.word} 입니다.</span>`;}};choicesWrap.appendChild(btn);});}
+document.getElementById('nextQuiz').onclick=()=>{quizIndex=(quizIndex+1)%Math.max(words.length,1);renderQuiz();};
+let wrongQuizIndex=0,wrongScore=0,wrongLocked=false;function getWrongWordObjects(){return words.filter(w=>wrongWords.includes(w.word));}
+function renderWrongQuiz(){const wrongObjects=getWrongWordObjects();document.getElementById('wrongProgress').textContent=`오답 ${wrongObjects.length}개`;document.getElementById('wrongScore').textContent=`점수 ${wrongScore}`;const emptyEl=document.getElementById('wrongEmpty'), choicesWrap=document.getElementById('wrongChoices'), result=document.getElementById('wrongResult'), meanEl=document.getElementById('wrongMeaning');choicesWrap.innerHTML='';result.innerHTML='';if(wrongObjects.length===0){emptyEl.style.display='block';meanEl.textContent='';return;}emptyEl.style.display='none';if(wrongQuizIndex>=wrongObjects.length)wrongQuizIndex=0;const item=wrongObjects[wrongQuizIndex];meanEl.textContent=item.meaning;meanEl.dataset.speak=item.meaning;wrongLocked=false;buildChoices(item,words).forEach(choice=>{const btn=document.createElement('button');btn.className='choice';btn.textContent=choice.word;btn.onclick=()=>{if(wrongLocked)return;wrongLocked=true;const isCorrect=choice.word===item.word;[...choicesWrap.children].forEach(child=>{if(child.textContent===item.word)child.classList.add('correct');});if(isCorrect){btn.classList.add('correct');wrongScore++;document.getElementById('wrongScore').textContent=`점수 ${wrongScore}`;removeWrongWord(item.word);result.innerHTML='<span class="result-ok">정답입니다. 이 단어는 오답노트에서 빠집니다.</span>';}else{btn.classList.add('wrong');result.innerHTML=`<span class="result-bad">오답입니다. 정답은 ${item.word} 입니다.</span>`;}};choicesWrap.appendChild(btn);});}
+document.getElementById('nextWrong').onclick=()=>{const wrongObjects=getWrongWordObjects();if(wrongObjects.length===0){renderWrongQuiz();return;}wrongQuizIndex=(wrongQuizIndex+1)%wrongObjects.length;renderWrongQuiz();};document.getElementById('clearWrongs').onclick=()=>{wrongWords=[];localStorage.setItem('wrongWordsV6',JSON.stringify(wrongWords));wrongScore=0;renderWrongQuiz();};
+let applyIndex=0;let dictationLogs=JSON.parse(localStorage.getItem('dictationLogsV6')||localStorage.getItem('dictationLogsV4')||'[]');
+function renderApply(){if(words.length===0)return;if(applyIndex>=words.length)applyIndex=0;const item=words[applyIndex];document.getElementById('applyProgress').textContent=`${applyIndex+1} / ${words.length}`;const example=document.getElementById('applyExample'), meaning=document.getElementById('applyMeaning');example.innerHTML=highlightWord(item.example,item.word);example.dataset.speak=item.example;meaning.textContent=item.meaning;meaning.dataset.speak=item.meaning;document.getElementById('dictationText').value='';renderDictationLogs();}
+function renderDictationLogs(){const ol=document.getElementById('dictationLogs');ol.innerHTML='';if(dictationLogs.length===0){const li=document.createElement('li');li.textContent='아직 기록이 없습니다.';ol.appendChild(li);return;}dictationLogs.forEach(log=>{const li=document.createElement('li');li.textContent=`${log.word} / ${log.text}`;ol.appendChild(li);});}
+document.getElementById('replayExample').onclick=()=>speakText(words[applyIndex].example);document.getElementById('replayMeaning').onclick=()=>speakText(words[applyIndex].meaning);document.getElementById('startDictation').onclick=()=>{const rec=createRecognition(text=>{document.getElementById('dictationText').value=text;});if(rec)rec.start();};document.getElementById('saveDictation').onclick=()=>{const text=document.getElementById('dictationText').value.trim();if(!text){alert('먼저 받아쓰기를 해 주세요.');return;}dictationLogs.unshift({word:words[applyIndex].word,text});dictationLogs=dictationLogs.slice(0,100);localStorage.setItem('dictationLogsV6',JSON.stringify(dictationLogs));renderDictationLogs();};document.getElementById('nextApply').onclick=()=>{applyIndex=(applyIndex+1)%Math.max(words.length,1);renderApply();};document.getElementById('clearDictationLogs').onclick=()=>{dictationLogs=[];localStorage.removeItem('dictationLogsV6');renderDictationLogs();};
+function parseInputText(text){
+  return text.split(/\r?\n/).map(line=>line.trim()).filter(Boolean).map(line=>{
+    const parts=line.split('/').map(x=>x.trim());
+    if(parts.length<3)return null;
+    const word=parts[0];
+    const example=parts[1];
+    let image='';
+    let meaning='';
+
+    if(parts.length===3){
+      // 기본형: 단어 / 예문 / 뜻
+      meaning=parts[2];
+    }else{
+      // 권장형: 단어 / 예문 / 이미지 / 뜻
+      // 예: sincere / I gave a sincere smile. / 🙂 / honest and true
+      // 구형도 지원: 단어 / 예문 / 뜻 / 이미지주소
+      const third=parts[2];
+      const rest=parts.slice(3).join(' / ');
+      if(isVisualToken(third)){
+        image=third;
+        meaning=rest;
+      }else if(isVisualToken(rest)){
+        meaning=third;
+        image=rest;
+      }else{
+        // 이미지 칸에 일반 단어가 들어오면 이미지로 처리하지 않고 뜻으로 합침
+        meaning=parts.slice(2).join(' / ');
+        image='';
+      }
+    }
+    return {word,example,image,meaning};
+  }).filter(Boolean);
+}
+
+function loadWords(newWords){if(!newWords||!newWords.length){alert('불러올 데이터가 없습니다.');return;}words=newWords.map(normalizeWordItem);saveCurrentWords();slideIndex=0;quizIndex=0;quizScore=0;applyIndex=0;wrongQuizIndex=0;wrongScore=0;wrongWords=[];localStorage.setItem('wrongWordsV6',JSON.stringify(wrongWords));renderAll();document.getElementById('uploadStatus').textContent=`${words.length}개 단어를 불러왔습니다.`;}
+document.getElementById('loadTextData').onclick=()=>{const parsed=parseInputText(document.getElementById('textInput').value);loadWords(parsed);};document.getElementById('fileInput').addEventListener('change',async e=>{const file=e.target.files[0];if(!file)return;const text=await file.text();document.getElementById('textInput').value=text;loadWords(parseInputText(text));});document.getElementById('saveCurrentSet').onclick=()=>{
+const name=prompt('저장 이름을 입력하세요.',`학습 ${new Date().toLocaleDateString()}`);
+if(!name)return;
+
+// 현재 입력창의 최신 내용을 다시 읽어서 저장
+const currentText=document.getElementById('textInput').value.trim();
+
+let latestWords=words;
+
+if(currentText){
+  const parsed=parseInputText(currentText);
+  if(parsed && parsed.length){
+    latestWords=parsed;
+    words=parsed;
+    saveCurrentWords();
+    renderAll();
+  }
+}
+
+savedSets.unshift({
+  id:Date.now(),
+  name,
+  words:JSON.parse(JSON.stringify(latestWords)),
+  rawText:currentText
+});
+
+savedSets=savedSets.slice(0,20);
+localStorage.setItem('savedWordSetsV6',JSON.stringify(savedSets));
+
+renderSavedSets();
+
+document.getElementById('uploadStatus').textContent=`현재 학습을 "${name}" 이름으로 저장했습니다.`;
+};
+function renderSavedSets(){const wrap=document.getElementById('savedList');wrap.innerHTML='';if(savedSets.length===0){wrap.innerHTML='<div class="empty">저장한 학습이 없습니다.</div>';return;}savedSets.forEach(set=>{const div=document.createElement('div');div.className='save-item';div.innerHTML=`<div><strong>${escapeHtml(set.name)}</strong></div><div class="muted">${set.words.length}개 단어</div><div class="row" style="margin-top:8px;"><button class="secondary" data-load="${set.id}">불러오기</button><button class="ghost" data-delete="${set.id}">삭제</button></div>`;wrap.appendChild(div);});wrap.querySelectorAll('[data-load]').forEach(btn=>{
+btn.onclick=()=>{
+  const set=savedSets.find(x=>x.id==btn.dataset.load);
+  if(!set)return;
+
+  // 저장 당시 입력했던 원문도 다시 입력창에 반영
+  if(set.rawText){
+    const input=document.getElementById('textInput');
+    if(input){
+      input.value=set.rawText;
+    }
+  }
+
+  loadWords(set.words);
+  document.querySelector('[data-tab="study1"]').click();
+};
+});wrap.querySelectorAll('[data-delete]').forEach(btn=>{btn.onclick=()=>{savedSets=savedSets.filter(x=>x.id!=btn.dataset.delete);localStorage.setItem('savedWordSetsV6',JSON.stringify(savedSets));renderSavedSets();};});}
+function renderAll(){renderSlide();renderStudy();renderSentenceMake();renderQuiz();renderWrongQuiz();renderApply();renderSavedSets();}
+normalizeAllWords();
+renderAll();
+</script>
+</body>
+</html>
